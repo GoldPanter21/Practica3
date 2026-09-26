@@ -1,0 +1,1 @@
+# En esta carpeta solo van capturas de pantalla, pero hice este archivo para el commit.
