@@ -21,6 +21,7 @@ import 'domain/usecases/sort_and_filter_files_usecase.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/file_explorer_provider.dart';
 import 'presentation/providers/favorites_provider.dart';
+import 'presentation/screens/home_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,6 +80,7 @@ Future<void> main() async {
     themeProvider: themeProvider,
     fileExplorerProvider: fileExplorerProvider,
     favoritesProvider: favoritesProvider,
+    settingsRepository: settingsRepository,
   ));
 }
 
@@ -86,12 +88,14 @@ class MyApp extends StatelessWidget {
   final ThemeProvider themeProvider;
   final FileExplorerProvider fileExplorerProvider;
   final FavoritesProvider favoritesProvider;
+  final SettingsRepository settingsRepository; 
 
   const MyApp({
     super.key,
     required this.themeProvider,
     required this.fileExplorerProvider,
     required this.favoritesProvider,
+    required this.settingsRepository,
   });
 
   @override
@@ -110,7 +114,10 @@ class MyApp extends StatelessWidget {
             themeMode: theme.themeMode,
             theme: AppTheme.light(theme.colorScheme),
             darkTheme: AppTheme.dark(theme.colorScheme),
-            home: const _ThemeTestScreen(),
+            home: HomeShell(
+              fileRepository: fileExplorerProvider.fileRepository,
+              settingsRepository: settingsProvider_or_settingsRepository, // ver nota abajo
+            ),
           );
         },
       ),
@@ -118,25 +125,3 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Pantalla TEMPORAL — la reemplazamos por el explorador real en el
-/// siguiente paso.
-class _ThemeTestScreen extends StatelessWidget {
-  const _ThemeTestScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    final explorer = context.watch<FileExplorerProvider>();
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Prueba de Provider')),
-      body: Center(
-        child: Text(
-          'Carpeta actual:\n${explorer.currentPath}\n\n'
-          'Estado: ${explorer.status}\n'
-          'Archivos encontrados: ${explorer.visibleItems.length}',
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-}
