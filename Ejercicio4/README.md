@@ -145,7 +145,6 @@ Después, desde Xcode (`ios/Runner.xcworkspace`), se puede archivar y exportar e
 ---
 
 ## Estructura del proyecto
-## Estructura del proyecto
 
 ```
 lib/
