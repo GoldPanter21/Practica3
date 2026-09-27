@@ -145,6 +145,9 @@ Después, desde Xcode (`ios/Runner.xcworkspace`), se puede archivar y exportar e
 ---
 
 ## Estructura del proyecto
+## Estructura del proyecto
+
+```
 lib/
 ├── core/
 │   ├── theme/
@@ -198,3 +201,4 @@ lib/
 │       └── sort_options_sheet.dart      # Menú de ordenamiento
 │
 └── main.dart   # Punto de entrada: inicializa Hive e inyecta todas las dependencias
+```
