@@ -67,7 +67,8 @@ Future<void> main() async {
     settingsRepository: settingsRepository,
   );
 
-  final favoritesProvider = FavoritesProvider(settingsRepository, fileRepository);
+  final favoritesProvider =
+      FavoritesProvider(settingsRepository, fileRepository);
 
   // --- Carpeta inicial: Documents del sandbox ---
   final roots = await fileRepository.getRootDirectories();
@@ -80,6 +81,7 @@ Future<void> main() async {
     themeProvider: themeProvider,
     fileExplorerProvider: fileExplorerProvider,
     favoritesProvider: favoritesProvider,
+    fileRepository: fileRepository,
     settingsRepository: settingsRepository,
   ));
 }
@@ -88,13 +90,15 @@ class MyApp extends StatelessWidget {
   final ThemeProvider themeProvider;
   final FileExplorerProvider fileExplorerProvider;
   final FavoritesProvider favoritesProvider;
-  final SettingsRepository settingsRepository; 
+  final FileRepository fileRepository;
+  final SettingsRepository settingsRepository;
 
   const MyApp({
     super.key,
     required this.themeProvider,
     required this.fileExplorerProvider,
     required this.favoritesProvider,
+    required this.fileRepository,
     required this.settingsRepository,
   });
 
@@ -115,8 +119,8 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.light(theme.colorScheme),
             darkTheme: AppTheme.dark(theme.colorScheme),
             home: HomeShell(
-              fileRepository: fileExplorerProvider.fileRepository,
-              settingsRepository: settingsProvider_or_settingsRepository, // ver nota abajo
+              fileRepository: fileRepository,
+              settingsRepository: settingsRepository,
             ),
           );
         },
@@ -124,4 +128,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

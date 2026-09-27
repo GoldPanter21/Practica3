@@ -60,7 +60,7 @@ class _FileExplorerScreenState extends State<FileExplorerScreen> {
               context,
               current: explorer.sortCriteria,
               ascending: explorer.sortAscending,
-              onSelect: explorer.setSortCriteria,
+              onSelect: (criteria, asc) => explorer.setSortCriteria(criteria, ascending: asc),
             ),
           ),
         ],
