@@ -1,121 +1,141 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(const MyApp());
+import 'core/theme/app_theme.dart';
+
+import 'data/datasources/file_system_datasource.dart';
+import 'data/datasources/local_storage_datasource.dart';
+import 'data/repositories/file_repository_impl.dart';
+import 'data/repositories/settings_repository_impl.dart';
+
+import 'domain/repositories/file_repository.dart';
+import 'domain/repositories/settings_repository.dart';
+import 'domain/usecases/list_directory_usecase.dart';
+import 'domain/usecases/create_folder_usecase.dart';
+import 'domain/usecases/rename_item_usecase.dart';
+import 'domain/usecases/delete_item_usecase.dart';
+import 'domain/usecases/copy_item_usecase.dart';
+import 'domain/usecases/move_item_usecase.dart';
+import 'domain/usecases/sort_and_filter_files_usecase.dart';
+
+import 'presentation/providers/theme_provider.dart';
+import 'presentation/providers/file_explorer_provider.dart';
+import 'presentation/providers/favorites_provider.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ===================================================================
+  // COMPOSICIÓN DE DEPENDENCIAS (Clean Architecture)
+  // Único lugar de la app donde se "arman" manualmente todas las capas.
+  // ===================================================================
+
+  // --- Datasources ---
+  final localStorage = LocalStorageDataSource();
+  await localStorage.init();
+  final fileSystemDataSource = FileSystemDataSource();
+
+  // --- Repositorios (implementaciones concretas) ---
+  final SettingsRepository settingsRepository =
+      SettingsRepositoryImpl(localStorage);
+  final FileRepository fileRepository =
+      FileRepositoryImpl(fileSystemDataSource);
+
+  // --- Casos de uso ---
+  final listDirectoryUseCase = ListDirectoryUseCase(fileRepository);
+  final createFolderUseCase = CreateFolderUseCase(fileRepository);
+  final renameItemUseCase = RenameItemUseCase(fileRepository);
+  final deleteItemUseCase = DeleteItemUseCase(fileRepository);
+  final copyItemUseCase = CopyItemUseCase(fileRepository);
+  final moveItemUseCase = MoveItemUseCase(fileRepository);
+  final sortAndFilterUseCase = SortAndFilterFilesUseCase();
+
+  // --- Providers ---
+  final themeProvider = ThemeProvider(settingsRepository);
+  await themeProvider.loadFromStorage();
+
+  final fileExplorerProvider = FileExplorerProvider(
+    listDirectory: listDirectoryUseCase,
+    createFolder: createFolderUseCase,
+    renameItem: renameItemUseCase,
+    deleteItem: deleteItemUseCase,
+    copyItem: copyItemUseCase,
+    moveItem: moveItemUseCase,
+    sortAndFilter: sortAndFilterUseCase,
+    fileRepository: fileRepository,
+    settingsRepository: settingsRepository,
+  );
+
+  final favoritesProvider = FavoritesProvider(settingsRepository, fileRepository);
+
+  // --- Carpeta inicial: Documents del sandbox ---
+  final roots = await fileRepository.getRootDirectories();
+  final startPath = roots['Documents']!;
+
+  await fileExplorerProvider.initRoots(startPath, rootLabel: 'Documents');
+  await favoritesProvider.load();
+
+  runApp(MyApp(
+    themeProvider: themeProvider,
+    fileExplorerProvider: fileExplorerProvider,
+    favoritesProvider: favoritesProvider,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ThemeProvider themeProvider;
+  final FileExplorerProvider fileExplorerProvider;
+  final FavoritesProvider favoritesProvider;
 
-  // This widget is the root of your application.
+  const MyApp({
+    super.key,
+    required this.themeProvider,
+    required this.fileExplorerProvider,
+    required this.favoritesProvider,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: fileExplorerProvider),
+        ChangeNotifierProvider.value(value: favoritesProvider),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, theme, _) {
+          return MaterialApp(
+            title: 'Gestor de Archivos',
+            debugShowCheckedModeBanner: false,
+            themeMode: theme.themeMode,
+            theme: AppTheme.light(theme.colorScheme),
+            darkTheme: AppTheme.dark(theme.colorScheme),
+            home: const _ThemeTestScreen(),
+          );
+        },
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+/// Pantalla TEMPORAL — la reemplazamos por el explorador real en el
+/// siguiente paso.
+class _ThemeTestScreen extends StatelessWidget {
+  const _ThemeTestScreen();
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final explorer = context.watch<FileExplorerProvider>();
+
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
+      appBar: AppBar(title: const Text('Prueba de Provider')),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        child: Text(
+          'Carpeta actual:\n${explorer.currentPath}\n\n'
+          'Estado: ${explorer.status}\n'
+          'Archivos encontrados: ${explorer.visibleItems.length}',
+          textAlign: TextAlign.center,
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
