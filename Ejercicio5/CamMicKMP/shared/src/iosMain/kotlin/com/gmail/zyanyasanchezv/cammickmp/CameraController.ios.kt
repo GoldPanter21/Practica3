@@ -4,7 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -12,8 +15,55 @@ import androidx.compose.ui.graphics.Color
 private class IOSCameraController :
     CameraController {
 
+    private var facingState by
+    mutableStateOf(
+        CameraFacing.BACK
+    )
+
+    private var flashState by
+    mutableStateOf(
+        CameraFlashMode.OFF
+    )
+
+    override val facing: CameraFacing
+        get() = facingState
+
+    override val flashMode:
+            CameraFlashMode
+        get() = flashState
+
+    override fun toggleCamera() {
+
+        facingState =
+            if (
+                facingState ==
+                CameraFacing.BACK
+            ) {
+                CameraFacing.FRONT
+            } else {
+                CameraFacing.BACK
+            }
+
+        if (
+            facingState ==
+            CameraFacing.FRONT
+        ) {
+            flashState =
+                CameraFlashMode.OFF
+        }
+    }
+
+    override fun setFlashMode(
+        mode: CameraFlashMode
+    ) {
+
+        flashState =
+            mode
+    }
+
     override fun capturePhoto(
-        onResult: (PhotoCaptureResult) -> Unit
+        onResult:
+            (PhotoCaptureResult) -> Unit
     ) {
 
         onResult(
@@ -42,8 +92,10 @@ actual fun CameraPreview(
 ) {
 
     Box(
-        modifier = modifier
-            .background(Color.Black),
+        modifier =
+            modifier.background(
+                Color.Black
+            ),
         contentAlignment =
             Alignment.Center
     ) {
@@ -51,7 +103,8 @@ actual fun CameraPreview(
         Text(
             text =
                 "Vista previa de cámara iOS",
-            color = Color.White
+            color =
+                Color.White
         )
     }
 }
