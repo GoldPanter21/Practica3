@@ -201,3 +201,19 @@ lib/
 │
 └── main.dart   # Punto de entrada: inicializa Hive e inyecta todas las dependencias
 ```
+
+## Capturas de pantalla
+
+Las capturas de la aplicación funcionando en un dispositivo Android físico se encuentran en la carpeta [`../Documentacion/imageneseje4`](../Documentacion/imageneseje4).
+
+### Explorador de archivos
+![Explorador de archivos](../Documentacion/imageneseje4/archivos.png)
+
+### Favoritos
+![Favoritos](../Documentacion/imageneseje4/favoritos.png)
+
+### Recientes
+![Recientes](../Documentacion/imageneseje4/recientes.png)
+
+### Ajustes (temas Guinda/Azul y modo claro/oscuro)
+![Ajustes](../Documentacion/imageneseje4/ajustes.png)
