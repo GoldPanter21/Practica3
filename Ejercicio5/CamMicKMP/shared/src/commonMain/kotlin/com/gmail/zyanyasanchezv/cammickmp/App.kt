@@ -88,6 +88,9 @@ fun App() {
     val audioController =
         rememberAudioController()
 
+    val mediaCategoryRepository =
+        rememberMediaCategoryRepository()
+
     CamMicTheme(
         institutionalTheme = selectedTheme
     ) {
@@ -98,6 +101,8 @@ fun App() {
             cameraController = cameraController,
             photoGalleryController = photoGalleryController,
             audioController = audioController,
+            mediaCategoryRepository =
+                mediaCategoryRepository,
             onScreenSelected = {
                 selectedScreen = it
             },
@@ -122,6 +127,7 @@ private fun MainScreen(
     cameraController: CameraController,
     photoGalleryController: PhotoGalleryController,
     audioController: AudioController,
+    mediaCategoryRepository: MediaCategoryRepository,
     onScreenSelected: (AppScreen) -> Unit,
     onThemeSelected: (InstitutionalTheme) -> Unit
 ) {
@@ -245,7 +251,9 @@ private fun MainScreen(
                         photoController =
                             photoGalleryController,
                         audioController =
-                            audioController
+                            audioController,
+                        categoryRepository =
+                            mediaCategoryRepository
                     )
 
                 AppScreen.AJUSTES ->

@@ -1,6 +1,7 @@
 package com.gmail.zyanyasanchezv.cammickmp
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +14,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -34,46 +38,72 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+
 enum class GalleryFilter {
     ALL,
     PHOTOS,
     AUDIOS
 }
 
+
+private const val ALL_CATEGORIES =
+    "Todas"
+
+
 private sealed interface GalleryMediaItem {
 
     val lastModified: Long
+
     val key: String
+
+    val path: String
+
 
     data class Photo(
         val photo: SavedPhoto
     ) : GalleryMediaItem {
 
         override val lastModified: Long
-            get() = photo.lastModified
+            get() =
+                photo.lastModified
 
         override val key: String
-            get() = "photo_${photo.path}"
+            get() =
+                "photo_${photo.path}"
+
+        override val path: String
+            get() =
+                photo.path
     }
+
 
     data class Audio(
         val audio: SavedAudio
     ) : GalleryMediaItem {
 
         override val lastModified: Long
-            get() = audio.lastModified
+            get() =
+                audio.lastModified
 
         override val key: String
-            get() = "audio_${audio.path}"
+            get() =
+                "audio_${audio.path}"
+
+        override val path: String
+            get() =
+                audio.path
     }
 }
+
 
 @Composable
 internal fun GalleryScreen(
     photoController:
     PhotoGalleryController,
     audioController:
-    AudioController
+    AudioController,
+    categoryRepository:
+    MediaCategoryRepository
 ) {
 
     var selectedFilter by remember {
@@ -82,65 +112,100 @@ internal fun GalleryScreen(
         )
     }
 
+
+    var selectedCategory by remember {
+        mutableStateOf(
+            ALL_CATEGORIES
+        )
+    }
+
+
+    var categoryVersion by remember {
+        mutableStateOf(0)
+    }
+
+
     val recordings by
     audioController
         .recordings
         .collectAsState()
+
 
     val playingPath by
     audioController
         .playingPath
         .collectAsState()
 
+
     LaunchedEffect(Unit) {
 
-        photoController.refresh()
+        photoController
+            .refresh()
 
         audioController
             .refreshRecordings()
     }
 
+
     val galleryItems =
         remember(
             photoController.photos,
             recordings,
-            selectedFilter
+            selectedFilter,
+            selectedCategory,
+            categoryVersion
         ) {
 
             val photos =
                 photoController
                     .photos
                     .map {
-                        GalleryMediaItem.Photo(
-                            it
-                        )
+                        GalleryMediaItem
+                            .Photo(it)
                     }
+
 
             val audios =
                 recordings
                     .map {
-                        GalleryMediaItem.Audio(
-                            it
-                        )
+                        GalleryMediaItem
+                            .Audio(it)
                     }
 
-            when (
-                selectedFilter
-            ) {
 
-                GalleryFilter.ALL ->
-                    photos + audios
+            val filteredByType:
+                    List<GalleryMediaItem> =
+                when (
+                    selectedFilter
+                ) {
 
-                GalleryFilter.PHOTOS ->
-                    photos
+                    GalleryFilter.ALL ->
+                        photos + audios
 
-                GalleryFilter.AUDIOS ->
-                    audios
-            }
+                    GalleryFilter.PHOTOS ->
+                        photos
+
+                    GalleryFilter.AUDIOS ->
+                        audios
+                }
+
+
+            filteredByType
+                .filter { item ->
+
+                    selectedCategory ==
+                            ALL_CATEGORIES ||
+                            categoryRepository
+                                .getCategory(
+                                    item.path
+                                ) ==
+                            selectedCategory
+                }
                 .sortedByDescending {
                     it.lastModified
                 }
         }
+
 
     Column(
         modifier = Modifier
@@ -148,6 +213,9 @@ internal fun GalleryScreen(
             .padding(16.dp)
     ) {
 
+        /*
+         * Encabezado
+         */
         Row(
             modifier =
                 Modifier.fillMaxWidth(),
@@ -167,6 +235,7 @@ internal fun GalleryScreen(
                     FontWeight.Bold
             )
 
+
             OutlinedButton(
                 onClick = {
 
@@ -184,6 +253,7 @@ internal fun GalleryScreen(
             }
         }
 
+
         Spacer(
             modifier =
                 Modifier.height(
@@ -191,8 +261,9 @@ internal fun GalleryScreen(
                 )
         )
 
+
         /*
-         * Filtros
+         * Filtro por tipo de contenido
          */
         Row(
             modifier =
@@ -201,7 +272,8 @@ internal fun GalleryScreen(
                 Arrangement.SpaceEvenly
         ) {
 
-            GalleryFilter.entries
+            GalleryFilter
+                .entries
                 .forEach {
                         filter ->
 
@@ -218,6 +290,7 @@ internal fun GalleryScreen(
                                 "Audios"
                         }
 
+
                     if (
                         selectedFilter ==
                         filter
@@ -225,6 +298,7 @@ internal fun GalleryScreen(
 
                         Button(
                             onClick = {
+
                                 selectedFilter =
                                     filter
                             }
@@ -237,6 +311,7 @@ internal fun GalleryScreen(
 
                         OutlinedButton(
                             onClick = {
+
                                 selectedFilter =
                                     filter
                             }
@@ -248,6 +323,7 @@ internal fun GalleryScreen(
                 }
         }
 
+
         Spacer(
             modifier =
                 Modifier.height(
@@ -255,6 +331,96 @@ internal fun GalleryScreen(
                 )
         )
 
+
+        /*
+         * Filtro por categoría
+         */
+        Text(
+            text = "Categoría",
+            fontWeight =
+                FontWeight.SemiBold
+        )
+
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    8.dp
+                )
+        )
+
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(
+                    rememberScrollState()
+                ),
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
+                )
+        ) {
+
+            val categories =
+                listOf(
+                    ALL_CATEGORIES
+                ) +
+                        MEDIA_CATEGORIES
+
+
+            categories
+                .forEach {
+                        category ->
+
+                    if (
+                        selectedCategory ==
+                        category
+                    ) {
+
+                        Button(
+                            onClick = {
+
+                                selectedCategory =
+                                    category
+                            }
+                        ) {
+
+                            Text(
+                                text = category
+                            )
+                        }
+
+                    } else {
+
+                        OutlinedButton(
+                            onClick = {
+
+                                selectedCategory =
+                                    category
+                            }
+                        ) {
+
+                            Text(
+                                text = category
+                            )
+                        }
+                    }
+                }
+        }
+
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    16.dp
+                )
+        )
+
+
+        /*
+         * Cantidad total almacenada
+         */
         Text(
             text =
                 "${photoController.photos.size} fotos · " +
@@ -269,6 +435,7 @@ internal fun GalleryScreen(
                     .primary
         )
 
+
         Spacer(
             modifier =
                 Modifier.height(
@@ -276,6 +443,10 @@ internal fun GalleryScreen(
                 )
         )
 
+
+        /*
+         * Contenido de la galería
+         */
         if (
             galleryItems.isEmpty()
         ) {
@@ -289,18 +460,29 @@ internal fun GalleryScreen(
 
                 Text(
                     text =
-                        when (
-                            selectedFilter
-                        ) {
+                        when {
 
-                            GalleryFilter.ALL ->
-                                "Aún no hay contenido"
+                            selectedCategory !=
+                                    ALL_CATEGORIES ->
 
-                            GalleryFilter.PHOTOS ->
+                                "No hay contenido en la categoría $selectedCategory"
+
+
+                            selectedFilter ==
+                                    GalleryFilter.PHOTOS ->
+
                                 "Aún no hay fotografías"
 
-                            GalleryFilter.AUDIOS ->
+
+                            selectedFilter ==
+                                    GalleryFilter.AUDIOS ->
+
                                 "Aún no hay grabaciones"
+
+
+                            else ->
+
+                                "Aún no hay contenido"
                         },
                     textAlign =
                         TextAlign.Center
@@ -331,18 +513,55 @@ internal fun GalleryScreen(
 
                             PhotoGalleryCard(
                                 photo =
-                                    item.photo
+                                    item.photo,
+                                category =
+                                    categoryRepository
+                                        .getCategory(
+                                            item.photo.path
+                                        ),
+                                onCategorySelected = {
+                                        category ->
+
+                                    categoryRepository
+                                        .saveCategory(
+                                            mediaPath =
+                                                item.photo.path,
+                                            category =
+                                                category
+                                        )
+
+                                    categoryVersion++
+                                }
                             )
                         }
+
 
                         is GalleryMediaItem.Audio -> {
 
                             AudioGalleryCard(
                                 audio =
                                     item.audio,
+                                category =
+                                    categoryRepository
+                                        .getCategory(
+                                            item.audio.path
+                                        ),
                                 isPlaying =
                                     playingPath ==
                                             item.audio.path,
+                                onCategorySelected = {
+                                        category ->
+
+                                    categoryRepository
+                                        .saveCategory(
+                                            mediaPath =
+                                                item.audio.path,
+                                            category =
+                                                category
+                                        )
+
+                                    categoryVersion++
+                                },
                                 onPlayClick = {
 
                                     audioController
@@ -359,9 +578,13 @@ internal fun GalleryScreen(
     }
 }
 
+
 @Composable
 private fun PhotoGalleryCard(
-    photo: SavedPhoto
+    photo: SavedPhoto,
+    category: String,
+    onCategorySelected:
+        (String) -> Unit
 ) {
 
     Card(
@@ -397,6 +620,7 @@ private fun PhotoGalleryCard(
                         )
             )
 
+
             Column(
                 modifier =
                     Modifier.padding(
@@ -415,6 +639,7 @@ private fun PhotoGalleryCard(
                         FontWeight.SemiBold
                 )
 
+
                 Spacer(
                     modifier =
                         Modifier.height(
@@ -422,12 +647,14 @@ private fun PhotoGalleryCard(
                         )
                 )
 
+
                 Text(
                     text =
                         photo.name,
                     fontWeight =
                         FontWeight.Bold
                 )
+
 
                 Text(
                     text =
@@ -437,15 +664,35 @@ private fun PhotoGalleryCard(
                             .typography
                             .bodySmall
                 )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            8.dp
+                        )
+                )
+
+
+                MediaCategorySelector(
+                    category =
+                        category,
+                    onCategorySelected =
+                        onCategorySelected
+                )
             }
         }
     }
 }
 
+
 @Composable
 private fun AudioGalleryCard(
     audio: SavedAudio,
+    category: String,
     isPlaying: Boolean,
+    onCategorySelected:
+        (String) -> Unit,
     onPlayClick: () -> Unit
 ) {
 
@@ -496,6 +743,7 @@ private fun AudioGalleryCard(
                 )
             }
 
+
             Column(
                 modifier =
                     Modifier
@@ -508,7 +756,8 @@ private fun AudioGalleryCard(
             ) {
 
                 Text(
-                    text = "🎙 Audio",
+                    text =
+                        "🎙 Audio",
                     color =
                         MaterialTheme
                             .colorScheme
@@ -517,6 +766,7 @@ private fun AudioGalleryCard(
                         FontWeight.SemiBold
                 )
 
+
                 Spacer(
                     modifier =
                         Modifier.height(
@@ -524,12 +774,14 @@ private fun AudioGalleryCard(
                         )
                 )
 
+
                 Text(
                     text =
                         audio.name,
                     fontWeight =
                         FontWeight.Bold
                 )
+
 
                 Text(
                     text =
@@ -539,7 +791,24 @@ private fun AudioGalleryCard(
                             .typography
                             .bodySmall
                 )
+
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            8.dp
+                        )
+                )
+
+
+                MediaCategorySelector(
+                    category =
+                        category,
+                    onCategorySelected =
+                        onCategorySelected
+                )
             }
+
 
             Button(
                 onClick =
@@ -562,3 +831,67 @@ private fun AudioGalleryCard(
 }
 
 
+@Composable
+private fun MediaCategorySelector(
+    category: String,
+    onCategorySelected:
+        (String) -> Unit
+) {
+
+    var expanded by remember {
+        mutableStateOf(false)
+    }
+
+
+    Box {
+
+        OutlinedButton(
+            onClick = {
+
+                expanded =
+                    true
+            }
+        ) {
+
+            Text(
+                text =
+                    "Categoría: $category"
+            )
+        }
+
+
+        DropdownMenu(
+            expanded =
+                expanded,
+            onDismissRequest = {
+
+                expanded =
+                    false
+            }
+        ) {
+
+            MEDIA_CATEGORIES
+                .forEach {
+                        option ->
+
+                    DropdownMenuItem(
+                        text = {
+
+                            Text(
+                                text = option
+                            )
+                        },
+                        onClick = {
+
+                            onCategorySelected(
+                                option
+                            )
+
+                            expanded =
+                                false
+                        }
+                    )
+                }
+        }
+    }
+}
