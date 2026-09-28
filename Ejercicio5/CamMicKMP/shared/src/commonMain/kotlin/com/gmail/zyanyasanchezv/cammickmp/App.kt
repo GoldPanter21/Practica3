@@ -1,5 +1,10 @@
 package com.gmail.zyanyasanchezv.cammickmp
 
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,6 +65,9 @@ fun App() {
     val permissionController =
         rememberMediaPermissionController()
 
+    val cameraController =
+        rememberCameraController()
+
     CamMicTheme(
         institutionalTheme = selectedTheme
     ) {
@@ -67,6 +75,7 @@ fun App() {
             selectedScreen = selectedScreen,
             selectedTheme = selectedTheme,
             permissionController = permissionController,
+            cameraController = cameraController,
             onScreenSelected = {
                 selectedScreen = it
             },
@@ -83,6 +92,7 @@ private fun MainScreen(
     selectedScreen: AppScreen,
     selectedTheme: InstitutionalTheme,
     permissionController: MediaPermissionController,
+    cameraController: CameraController,
     onScreenSelected: (AppScreen) -> Unit,
     onThemeSelected: (InstitutionalTheme) -> Unit
 ) {
@@ -140,19 +150,34 @@ private fun MainScreen(
                 AppScreen.INICIO ->
                     HomeScreen()
 
-                AppScreen.CAMARA ->
-                    PermissionFeatureScreen(
-                        title = "Cámara",
-                        symbol = "📷",
-                        description =
-                            "Permite capturar fotografías, aplicar filtros, utilizar flash y configurar un temporizador.",
-                        permissionGranted =
-                            permissionController.cameraGranted,
-                        permissionName = "cámara",
-                        onRequestPermission = {
-                            permissionController.requestCamera()
-                        }
-                    )
+                AppScreen.CAMARA -> {
+
+                    if (
+                        permissionController
+                            .cameraGranted
+                    ) {
+
+                        CameraScreen(
+                            cameraController =
+                                cameraController
+                        )
+
+                    } else {
+
+                        PermissionFeatureScreen(
+                            title = "Cámara",
+                            symbol = "📷",
+                            description =
+                                "Permite capturar fotografías, aplicar filtros, utilizar flash y configurar un temporizador.",
+                            permissionGranted = false,
+                            permissionName = "cámara",
+                            onRequestPermission = {
+                                permissionController
+                                    .requestCamera()
+                            }
+                        )
+                    }
+                }
 
                 AppScreen.AUDIO ->
                     PermissionFeatureScreen(
@@ -409,6 +434,108 @@ private fun PermissionFeatureScreen(
                     text = "Conceder permiso"
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun CameraScreen(
+    cameraController: CameraController
+) {
+
+    var captureMessage by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment =
+            Alignment.CenterHorizontally
+    ) {
+
+        Text(
+            text = "Cámara",
+            style =
+                MaterialTheme.typography
+                    .headlineSmall,
+            fontWeight =
+                FontWeight.Bold
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(12.dp)
+        )
+
+        CameraPreview(
+            controller =
+                cameraController,
+
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(3f / 4f)
+                .clip(
+                    RoundedCornerShape(
+                        20.dp
+                    )
+                )
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(20.dp)
+        )
+
+        Button(
+            onClick = {
+
+                captureMessage =
+                    "Capturando..."
+
+                cameraController
+                    .capturePhoto {
+                            result ->
+
+                        captureMessage =
+                            if (result.success) {
+
+                                "✓ ${result.message}"
+
+                            } else {
+
+                                "Error: ${result.message}"
+                            }
+                    }
+            }
+        ) {
+
+            Text(
+                text =
+                    "📸 Capturar fotografía"
+            )
+        }
+
+        captureMessage?.let {
+                message ->
+
+            Spacer(
+                modifier =
+                    Modifier.height(12.dp)
+            )
+
+            Text(
+                text = message,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .primary,
+                textAlign =
+                    TextAlign.Center,
+                fontWeight =
+                    FontWeight.SemiBold
+            )
         }
     }
 }
