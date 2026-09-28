@@ -67,10 +67,15 @@ fun App() {
         mutableStateOf(AppScreen.INICIO)
     }
 
-    var selectedTheme by remember {
-        mutableStateOf(InstitutionalTheme.GUINDA)
-    }
+    val themePreferences =
+        rememberThemePreferences()
 
+    var selectedTheme by remember {
+        mutableStateOf(
+            themePreferences.getTheme()
+        )
+    }
+    
     val permissionController =
         rememberMediaPermissionController()
 
@@ -96,8 +101,13 @@ fun App() {
             onScreenSelected = {
                 selectedScreen = it
             },
-            onThemeSelected = {
-                selectedTheme = it
+            onThemeSelected = { theme ->
+
+                selectedTheme =
+                    theme
+
+                themePreferences
+                    .saveTheme(theme)
             }
         )
     }
