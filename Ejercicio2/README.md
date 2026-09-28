@@ -1,1 +1,1 @@
-# En esta carpeta va el ejercicio 2hola buena tardes
+# En esta carpeta va el ejercicio 2
