@@ -60,6 +60,40 @@ enum class AppScreen(
     AJUSTES("Ajustes", "⚙")
 }
 
+enum class GalleryFilter {
+    ALL,
+    PHOTOS,
+    AUDIOS
+}
+
+private sealed interface GalleryMediaItem {
+
+    val lastModified: Long
+    val key: String
+
+    data class Photo(
+        val photo: SavedPhoto
+    ) : GalleryMediaItem {
+
+        override val lastModified: Long
+            get() = photo.lastModified
+
+        override val key: String
+            get() = "photo_${photo.path}"
+    }
+
+    data class Audio(
+        val audio: SavedAudio
+    ) : GalleryMediaItem {
+
+        override val lastModified: Long
+            get() = audio.lastModified
+
+        override val key: String
+            get() = "audio_${audio.path}"
+    }
+}
+
 @Composable
 @Preview
 fun App() {
@@ -232,8 +266,10 @@ private fun MainScreen(
 
                 AppScreen.GALERIA ->
                     GalleryScreen(
-                        controller =
-                            photoGalleryController
+                        photoController =
+                            photoGalleryController,
+                        audioController =
+                            audioController
                     )
 
                 AppScreen.AJUSTES ->
@@ -1447,12 +1483,77 @@ private fun formatAudioTime(
 
 @Composable
 private fun GalleryScreen(
-    controller: PhotoGalleryController
+    photoController:
+    PhotoGalleryController,
+    audioController:
+    AudioController
 ) {
 
-    LaunchedEffect(Unit) {
-        controller.refresh()
+    var selectedFilter by remember {
+        mutableStateOf(
+            GalleryFilter.ALL
+        )
     }
+
+    val recordings by
+    audioController
+        .recordings
+        .collectAsState()
+
+    val playingPath by
+    audioController
+        .playingPath
+        .collectAsState()
+
+    LaunchedEffect(Unit) {
+
+        photoController.refresh()
+
+        audioController
+            .refreshRecordings()
+    }
+
+    val galleryItems =
+        remember(
+            photoController.photos,
+            recordings,
+            selectedFilter
+        ) {
+
+            val photos =
+                photoController
+                    .photos
+                    .map {
+                        GalleryMediaItem.Photo(
+                            it
+                        )
+                    }
+
+            val audios =
+                recordings
+                    .map {
+                        GalleryMediaItem.Audio(
+                            it
+                        )
+                    }
+
+            when (
+                selectedFilter
+            ) {
+
+                GalleryFilter.ALL ->
+                    photos + audios
+
+                GalleryFilter.PHOTOS ->
+                    photos
+
+                GalleryFilter.AUDIOS ->
+                    audios
+            }
+                .sortedByDescending {
+                    it.lastModified
+                }
+        }
 
     Column(
         modifier = Modifier
@@ -1472,15 +1573,21 @@ private fun GalleryScreen(
             Text(
                 text = "Galería",
                 style =
-                    MaterialTheme.typography
+                    MaterialTheme
+                        .typography
                         .headlineSmall,
                 fontWeight =
                     FontWeight.Bold
             )
 
-            Button(
+            OutlinedButton(
                 onClick = {
-                    controller.refresh()
+
+                    photoController
+                        .refresh()
+
+                    audioController
+                        .refreshRecordings()
                 }
             ) {
 
@@ -1492,10 +1599,99 @@ private fun GalleryScreen(
 
         Spacer(
             modifier =
-                Modifier.height(16.dp)
+                Modifier.height(
+                    16.dp
+                )
         )
 
-        if (controller.photos.isEmpty()) {
+        /*
+         * Filtros
+         */
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.SpaceEvenly
+        ) {
+
+            GalleryFilter.entries
+                .forEach {
+                        filter ->
+
+                    val label =
+                        when (filter) {
+
+                            GalleryFilter.ALL ->
+                                "Todo"
+
+                            GalleryFilter.PHOTOS ->
+                                "Fotos"
+
+                            GalleryFilter.AUDIOS ->
+                                "Audios"
+                        }
+
+                    if (
+                        selectedFilter ==
+                        filter
+                    ) {
+
+                        Button(
+                            onClick = {
+                                selectedFilter =
+                                    filter
+                            }
+                        ) {
+
+                            Text(label)
+                        }
+
+                    } else {
+
+                        OutlinedButton(
+                            onClick = {
+                                selectedFilter =
+                                    filter
+                            }
+                        ) {
+
+                            Text(label)
+                        }
+                    }
+                }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    16.dp
+                )
+        )
+
+        Text(
+            text =
+                "${photoController.photos.size} fotos · " +
+                        "${recordings.size} audios",
+            style =
+                MaterialTheme
+                    .typography
+                    .bodyMedium,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .primary
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(
+                    12.dp
+                )
+        )
+
+        if (
+            galleryItems.isEmpty()
+        ) {
 
             Box(
                 modifier =
@@ -1506,7 +1702,19 @@ private fun GalleryScreen(
 
                 Text(
                     text =
-                        "Aún no hay fotografías",
+                        when (
+                            selectedFilter
+                        ) {
+
+                            GalleryFilter.ALL ->
+                                "Aún no hay contenido"
+
+                            GalleryFilter.PHOTOS ->
+                                "Aún no hay fotografías"
+
+                            GalleryFilter.AUDIOS ->
+                                "Aún no hay grabaciones"
+                        },
                     textAlign =
                         TextAlign.Center
                 )
@@ -1523,83 +1731,244 @@ private fun GalleryScreen(
 
                 items(
                     items =
-                        controller.photos,
-                    key = { photo ->
-                        photo.path
+                        galleryItems,
+                    key = {
+                        it.key
                     }
-                ) { photo ->
+                ) {
+                        item ->
 
-                    Card(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth(),
-                        shape =
-                            RoundedCornerShape(
-                                16.dp
+                    when (item) {
+
+                        is GalleryMediaItem.Photo -> {
+
+                            PhotoGalleryCard(
+                                photo =
+                                    item.photo
                             )
-                    ) {
+                        }
 
-                        Row(
-                            modifier =
-                                Modifier.padding(
-                                    12.dp
-                                ),
-                            verticalAlignment =
-                                Alignment.CenterVertically
-                        ) {
+                        is GalleryMediaItem.Audio -> {
 
-                            SavedPhotoThumbnail(
-                                path =
-                                    photo.path,
-                                modifier =
-                                    Modifier
-                                        .size(
-                                            96.dp
+                            AudioGalleryCard(
+                                audio =
+                                    item.audio,
+                                isPlaying =
+                                    playingPath ==
+                                            item.audio.path,
+                                onPlayClick = {
+
+                                    audioController
+                                        .togglePlayback(
+                                            item.audio.path
                                         )
-                                        .clip(
-                                            RoundedCornerShape(
-                                                12.dp
-                                            )
-                                        )
+                                }
                             )
-
-                            Column(
-                                modifier =
-                                    Modifier.padding(
-                                        start = 16.dp
-                                    )
-                            ) {
-
-                                Text(
-                                    text =
-                                        photo.name,
-                                    fontWeight =
-                                        FontWeight.Bold
-                                )
-
-                                Spacer(
-                                    modifier =
-                                        Modifier.height(
-                                            4.dp
-                                        )
-                                )
-
-                                Text(
-                                    text =
-                                        "Guardada localmente",
-                                    style =
-                                        MaterialTheme
-                                            .typography
-                                            .bodyMedium,
-                                    color =
-                                        MaterialTheme
-                                            .colorScheme
-                                            .primary
-                                )
-                            }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PhotoGalleryCard(
+    photo: SavedPhoto
+) {
+
+    Card(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                16.dp
+            )
+    ) {
+
+        Row(
+            modifier =
+                Modifier.padding(
+                    12.dp
+                ),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            SavedPhotoThumbnail(
+                path =
+                    photo.path,
+                modifier =
+                    Modifier
+                        .size(
+                            96.dp
+                        )
+                        .clip(
+                            RoundedCornerShape(
+                                12.dp
+                            )
+                        )
+            )
+
+            Column(
+                modifier =
+                    Modifier.padding(
+                        start = 16.dp
+                    )
+            ) {
+
+                Text(
+                    text =
+                        "📷 Fotografía",
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .primary,
+                    fontWeight =
+                        FontWeight.SemiBold
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            4.dp
+                        )
+                )
+
+                Text(
+                    text =
+                        photo.name,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    text =
+                        "Guardada localmente",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AudioGalleryCard(
+    audio: SavedAudio,
+    isPlaying: Boolean,
+    onPlayClick: () -> Unit
+) {
+
+    Card(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                16.dp
+            )
+    ) {
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        16.dp
+                    ),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Box(
+                modifier =
+                    Modifier
+                        .size(
+                            72.dp
+                        )
+                        .clip(
+                            RoundedCornerShape(
+                                16.dp
+                            )
+                        )
+                        .background(
+                            MaterialTheme
+                                .colorScheme
+                                .primaryContainer
+                        ),
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                Text(
+                    text = "🎙",
+                    fontSize =
+                        34.sp
+                )
+            }
+
+            Column(
+                modifier =
+                    Modifier
+                        .weight(
+                            1f
+                        )
+                        .padding(
+                            start = 16.dp
+                        )
+            ) {
+
+                Text(
+                    text = "🎙 Audio",
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .primary,
+                    fontWeight =
+                        FontWeight.SemiBold
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            4.dp
+                        )
+                )
+
+                Text(
+                    text =
+                        audio.name,
+                    fontWeight =
+                        FontWeight.Bold
+                )
+
+                Text(
+                    text =
+                        "Guardado localmente",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall
+                )
+            }
+
+            Button(
+                onClick =
+                    onPlayClick
+            ) {
+
+                Text(
+                    text =
+                        if (
+                            isPlaying
+                        ) {
+                            "■"
+                        } else {
+                            "▶"
+                        }
+                )
             }
         }
     }
