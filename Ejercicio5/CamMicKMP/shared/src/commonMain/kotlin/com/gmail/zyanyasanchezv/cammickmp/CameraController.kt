@@ -20,13 +20,25 @@ enum class CameraFlashMode {
     AUTO
 }
 
+enum class PhotoFilter {
+    ORIGINAL,
+    GRAYSCALE,
+    SEPIA
+}
+
 interface CameraController {
 
     val facing: CameraFacing
 
     val flashMode: CameraFlashMode
 
+    val photoFilter: PhotoFilter
+
     fun toggleCamera()
+
+    fun setPhotoFilter(
+        filter: PhotoFilter
+    )
 
     fun setFlashMode(
         mode: CameraFlashMode

@@ -75,7 +75,7 @@ fun App() {
             themePreferences.getTheme()
         )
     }
-    
+
     val permissionController =
         rememberMediaPermissionController()
 

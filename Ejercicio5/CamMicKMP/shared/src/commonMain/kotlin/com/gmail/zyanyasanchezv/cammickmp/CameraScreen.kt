@@ -212,6 +212,83 @@ internal fun CameraScreen(
         )
 
         Text(
+            text = "Filtro",
+            fontWeight =
+                FontWeight.SemiBold
+        )
+
+        Spacer(
+            modifier =
+                Modifier.height(6.dp)
+        )
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.SpaceEvenly
+        ) {
+
+            PhotoFilter.entries
+                .forEach {
+                        filter ->
+
+                    val label =
+                        when (filter) {
+
+                            PhotoFilter.ORIGINAL ->
+                                "Original"
+
+                            PhotoFilter.GRAYSCALE ->
+                                "B/N"
+
+                            PhotoFilter.SEPIA ->
+                                "Sepia"
+                        }
+
+                    if (
+                        cameraController
+                            .photoFilter ==
+                        filter
+                    ) {
+
+                        Button(
+                            onClick = {
+
+                                cameraController
+                                    .setPhotoFilter(
+                                        filter
+                                    )
+                            }
+                        ) {
+
+                            Text(label)
+                        }
+
+                    } else {
+
+                        OutlinedButton(
+                            onClick = {
+
+                                cameraController
+                                    .setPhotoFilter(
+                                        filter
+                                    )
+                            }
+                        ) {
+
+                            Text(label)
+                        }
+                    }
+                }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(16.dp)
+        )
+
+        Text(
             text = "Temporizador",
             fontWeight =
                 FontWeight.SemiBold

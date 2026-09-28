@@ -15,6 +15,11 @@ import androidx.compose.ui.graphics.Color
 private class IOSCameraController :
     CameraController {
 
+    private var photoFilterState by
+    mutableStateOf(
+        PhotoFilter.ORIGINAL
+    )
+
     private var facingState by
     mutableStateOf(
         CameraFacing.BACK
@@ -25,12 +30,24 @@ private class IOSCameraController :
         CameraFlashMode.OFF
     )
 
+    override val photoFilter:
+            PhotoFilter
+        get() = photoFilterState
+
     override val facing: CameraFacing
         get() = facingState
 
     override val flashMode:
             CameraFlashMode
         get() = flashState
+
+    override fun setPhotoFilter(
+        filter: PhotoFilter
+    ) {
+
+        photoFilterState =
+            filter
+    }
 
     override fun toggleCamera() {
 

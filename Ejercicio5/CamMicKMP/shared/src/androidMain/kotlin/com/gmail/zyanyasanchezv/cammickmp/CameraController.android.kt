@@ -1,5 +1,11 @@
 package com.gmail.zyanyasanchezv.cammickmp
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
+import android.graphics.Paint
 import android.content.Context
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -36,11 +42,123 @@ private class AndroidCameraController(
         CameraFlashMode.OFF
     )
 
+    private var photoFilterState by
+    mutableStateOf(
+        PhotoFilter.ORIGINAL
+    )
+
     override val facing: CameraFacing
         get() = facingState
 
     override val flashMode: CameraFlashMode
         get() = flashModeState
+
+    override val photoFilter: PhotoFilter
+        get() = photoFilterState
+
+    override fun setPhotoFilter(
+        filter: PhotoFilter
+    ) {
+
+        photoFilterState =
+            filter
+    }
+
+    private fun applySelectedFilter(
+        file: File
+    ): Boolean {
+
+        if (
+            photoFilterState ==
+            PhotoFilter.ORIGINAL
+        ) {
+            return true
+        }
+
+        val sourceBitmap =
+            BitmapFactory.decodeFile(
+                file.absolutePath
+            )
+                ?: return false
+
+        val filteredBitmap =
+            Bitmap.createBitmap(
+                sourceBitmap.width,
+                sourceBitmap.height,
+                Bitmap.Config.ARGB_8888
+            )
+
+        val canvas =
+            Canvas(filteredBitmap)
+
+        val paint =
+            Paint()
+
+        val colorMatrix =
+            when (
+                photoFilterState
+            ) {
+
+                PhotoFilter.GRAYSCALE -> {
+
+                    ColorMatrix().apply {
+                        setSaturation(0f)
+                    }
+                }
+
+                PhotoFilter.SEPIA -> {
+
+                    ColorMatrix(
+                        floatArrayOf(
+                            0.393f, 0.769f, 0.189f, 0f, 0f,
+                            0.349f, 0.686f, 0.168f, 0f, 0f,
+                            0.272f, 0.534f, 0.131f, 0f, 0f,
+                            0f,     0f,     0f,     1f, 0f
+                        )
+                    )
+                }
+
+                PhotoFilter.ORIGINAL ->
+                    ColorMatrix()
+            }
+
+        paint.colorFilter =
+            ColorMatrixColorFilter(
+                colorMatrix
+            )
+
+        canvas.drawBitmap(
+            sourceBitmap,
+            0f,
+            0f,
+            paint
+        )
+
+        return try {
+
+            file.outputStream().use {
+                    outputStream ->
+
+                filteredBitmap.compress(
+                    Bitmap.CompressFormat.JPEG,
+                    92,
+                    outputStream
+                )
+            }
+
+        } catch (
+            _: Exception
+        ) {
+
+            false
+
+        } finally {
+
+            sourceBitmap.recycle()
+
+            filteredBitmap.recycle()
+        }
+    }
 
     init {
 
@@ -190,20 +308,53 @@ private class AndroidCameraController(
 
                         override fun onImageSaved(
                             outputFileResults:
-                            ImageCapture
-                            .OutputFileResults
+                            ImageCapture.OutputFileResults
                         ) {
 
-                            onResult(
-                                PhotoCaptureResult(
-                                    success = true,
-                                    path =
-                                        photoFile
-                                            .absolutePath,
-                                    message =
-                                        "Fotografía guardada correctamente"
+                            val filterApplied =
+                                applySelectedFilter(
+                                    photoFile
                                 )
-                            )
+
+                            if (filterApplied) {
+
+                                val filterName =
+                                    when (
+                                        photoFilterState
+                                    ) {
+
+                                        PhotoFilter.ORIGINAL ->
+                                            "Original"
+
+                                        PhotoFilter.GRAYSCALE ->
+                                            "Blanco y negro"
+
+                                        PhotoFilter.SEPIA ->
+                                            "Sepia"
+                                    }
+
+                                onResult(
+                                    PhotoCaptureResult(
+                                        success = true,
+                                        path =
+                                            photoFile.absolutePath,
+                                        message =
+                                            "Fotografía guardada · $filterName"
+                                    )
+                                )
+
+                            } else {
+
+                                photoFile.delete()
+
+                                onResult(
+                                    PhotoCaptureResult(
+                                        success = false,
+                                        message =
+                                            "No se pudo aplicar el filtro"
+                                    )
+                                )
+                            }
                         }
 
                         override fun onError(
