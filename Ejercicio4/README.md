@@ -207,13 +207,13 @@ lib/
 Las capturas de la aplicación funcionando en un dispositivo Android físico se encuentran en la carpeta [`../Documentacion/imageneseje4`](../Documentacion/imageneseje4).
 
 ### Explorador de archivos
-![Explorador de archivos](../Documentacion/imageneseje4/Archivos.png)
+![Explorador de archivos](../Documentacion/imageneseje4/arc.png)
 
 ### Favoritos
-![Favoritos](../Documentacion/imageneseje4/Favoritos.png)
+![Favoritos](../Documentacion/imageneseje4/fav.png)
 
 ### Recientes
-![Recientes](../Documentacion/imageneseje4/Recientes.png)
+![Recientes](../Documentacion/imageneseje4/rec.png)
 
 ### Ajustes (temas Guinda/Azul y modo claro/oscuro)
 ![Ajustes](../Documentacion/imageneseje4/ajustes.png)
