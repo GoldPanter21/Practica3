@@ -1,5 +1,8 @@
 package com.gmail.zyanyasanchezv.cammickmp
 
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.aspectRatio
@@ -68,6 +71,9 @@ fun App() {
     val cameraController =
         rememberCameraController()
 
+    val photoGalleryController =
+        rememberPhotoGalleryController()
+
     CamMicTheme(
         institutionalTheme = selectedTheme
     ) {
@@ -76,6 +82,7 @@ fun App() {
             selectedTheme = selectedTheme,
             permissionController = permissionController,
             cameraController = cameraController,
+            photoGalleryController = photoGalleryController,
             onScreenSelected = {
                 selectedScreen = it
             },
@@ -93,6 +100,7 @@ private fun MainScreen(
     selectedTheme: InstitutionalTheme,
     permissionController: MediaPermissionController,
     cameraController: CameraController,
+    photoGalleryController: PhotoGalleryController,
     onScreenSelected: (AppScreen) -> Unit,
     onThemeSelected: (InstitutionalTheme) -> Unit
 ) {
@@ -194,11 +202,9 @@ private fun MainScreen(
                     )
 
                 AppScreen.GALERIA ->
-                    FeatureScreen(
-                        title = "Galería",
-                        symbol = "▦",
-                        description =
-                            "Consulta las fotografías y grabaciones almacenadas localmente."
+                    GalleryScreen(
+                        controller =
+                            photoGalleryController
                     )
 
                 AppScreen.AJUSTES ->
@@ -536,6 +542,166 @@ private fun CameraScreen(
                 fontWeight =
                     FontWeight.SemiBold
             )
+        }
+    }
+}
+
+@Composable
+private fun GalleryScreen(
+    controller: PhotoGalleryController
+) {
+
+    LaunchedEffect(Unit) {
+        controller.refresh()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.SpaceBetween,
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = "Galería",
+                style =
+                    MaterialTheme.typography
+                        .headlineSmall,
+                fontWeight =
+                    FontWeight.Bold
+            )
+
+            Button(
+                onClick = {
+                    controller.refresh()
+                }
+            ) {
+
+                Text(
+                    text = "Actualizar"
+                )
+            }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(16.dp)
+        )
+
+        if (controller.photos.isEmpty()) {
+
+            Box(
+                modifier =
+                    Modifier.fillMaxSize(),
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                Text(
+                    text =
+                        "Aún no hay fotografías",
+                    textAlign =
+                        TextAlign.Center
+                )
+            }
+
+        } else {
+
+            LazyColumn(
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        12.dp
+                    )
+            ) {
+
+                items(
+                    items =
+                        controller.photos,
+                    key = { photo ->
+                        photo.path
+                    }
+                ) { photo ->
+
+                    Card(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(
+                                16.dp
+                            )
+                    ) {
+
+                        Row(
+                            modifier =
+                                Modifier.padding(
+                                    12.dp
+                                ),
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+
+                            SavedPhotoThumbnail(
+                                path =
+                                    photo.path,
+                                modifier =
+                                    Modifier
+                                        .size(
+                                            96.dp
+                                        )
+                                        .clip(
+                                            RoundedCornerShape(
+                                                12.dp
+                                            )
+                                        )
+                            )
+
+                            Column(
+                                modifier =
+                                    Modifier.padding(
+                                        start = 16.dp
+                                    )
+                            ) {
+
+                                Text(
+                                    text =
+                                        photo.name,
+                                    fontWeight =
+                                        FontWeight.Bold
+                                )
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.height(
+                                            4.dp
+                                        )
+                                )
+
+                                Text(
+                                    text =
+                                        "Guardada localmente",
+                                    style =
+                                        MaterialTheme
+                                            .typography
+                                            .bodyMedium,
+                                    color =
+                                        MaterialTheme
+                                            .colorScheme
+                                            .primary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
