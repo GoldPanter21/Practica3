@@ -1,5 +1,6 @@
 package com.gmail.zyanyasanchezv.cammickmp
 
+import androidx.compose.material3.Button
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,12 +57,16 @@ fun App() {
         mutableStateOf(InstitutionalTheme.GUINDA)
     }
 
+    val permissionController =
+        rememberMediaPermissionController()
+
     CamMicTheme(
         institutionalTheme = selectedTheme
     ) {
         MainScreen(
             selectedScreen = selectedScreen,
             selectedTheme = selectedTheme,
+            permissionController = permissionController,
             onScreenSelected = {
                 selectedScreen = it
             },
@@ -77,6 +82,7 @@ fun App() {
 private fun MainScreen(
     selectedScreen: AppScreen,
     selectedTheme: InstitutionalTheme,
+    permissionController: MediaPermissionController,
     onScreenSelected: (AppScreen) -> Unit,
     onThemeSelected: (InstitutionalTheme) -> Unit
 ) {
@@ -135,19 +141,31 @@ private fun MainScreen(
                     HomeScreen()
 
                 AppScreen.CAMARA ->
-                    FeatureScreen(
+                    PermissionFeatureScreen(
                         title = "Cámara",
                         symbol = "📷",
                         description =
-                            "Captura fotografías, aplica filtros, utiliza flash y configura un temporizador."
+                            "Permite capturar fotografías, aplicar filtros, utilizar flash y configurar un temporizador.",
+                        permissionGranted =
+                            permissionController.cameraGranted,
+                        permissionName = "cámara",
+                        onRequestPermission = {
+                            permissionController.requestCamera()
+                        }
                     )
 
                 AppScreen.AUDIO ->
-                    FeatureScreen(
+                    PermissionFeatureScreen(
                         title = "Micrófono",
                         symbol = "🎙",
                         description =
-                            "Graba audio, consulta el nivel de entrada y utiliza un temporizador de grabación."
+                            "Permite grabar audio, consultar el nivel de entrada y utilizar un temporizador.",
+                        permissionGranted =
+                            permissionController.microphoneGranted,
+                        permissionName = "micrófono",
+                        onRequestPermission = {
+                            permissionController.requestMicrophone()
+                        }
                     )
 
                 AppScreen.GALERIA ->
@@ -314,6 +332,84 @@ private fun FeatureScreen(
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold
         )
+    }
+}
+
+@Composable
+private fun PermissionFeatureScreen(
+    title: String,
+    symbol: String,
+    description: String,
+    permissionGranted: Boolean,
+    permissionName: String,
+    onRequestPermission: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        Text(
+            text = symbol,
+            fontSize = 72.sp
+        )
+
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(
+            modifier = Modifier.height(28.dp)
+        )
+
+        if (permissionGranted) {
+
+            Text(
+                text = "Permiso concedido ✓",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+
+        } else {
+
+            Text(
+                text = "Se requiere permiso de $permissionName",
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
+            Button(
+                onClick = onRequestPermission
+            ) {
+
+                Text(
+                    text = "Conceder permiso"
+                )
+            }
+        }
     }
 }
 
