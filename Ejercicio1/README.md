@@ -20,7 +20,7 @@ El desarrollo por cuestiones de tiempo del equipo (aunque no recomandado en la p
 
 **Integrante Responsable del Entorno:**
 * **Nombre:** Orozco Aguilar Angel Isai, 2024630437
-* **Boleta:** Sánchez Valadez Zyanya Maxi, 202463
+* **Boleta:** Sánchez Valadez Zyanya Maxi, 2024630593
 
 ## 1.2 Bitácora de Sesiones y Trabajo en Equipo
 Aunque la instalación se realizó físicamente en el equipo ASUS TUF A15 y HP Victus 15, la actividad se desarrolló de forma conjunta mediante una sesione remotas con pantalla compartida, asegurando la participación de todos los integrantes, de forma que se adjuntan evidencias de la configuración de Sánchez y Orozco siguiendo los pasos en su dispositivo.
@@ -50,10 +50,19 @@ Una vez iniciado el sistema operativo macOS virtualizado, se verificó el acceso
 
 * **Instalación de Xcode:** Descargado e instalado directamente desde la Mac App Store del entorno virtualizado.<br>
 <img src="../Documentacion/Ejer1/XCode.png" width="400"><br>
-* **Configuración de Simuladores:** Se descargaron los runtimes necesarios y se configuraron simuladores para iPhone y iPad dentro de Xcode.
+* **Configuración de Simuladores:** Se descargaron los runtimes necesarios y se configuraron simuladores para iPhone y iPad dentro de Xcode.<br>
+<img src="../Documentacion/Ejer1/ConfigSimul.png" width="400"><br>
+* **Herramientas de Consola:** Se instaló Homebrew mediante la terminal de macOS, y a través de este, los gestores de dependencias solicitados (CocoaPods) y Swift Package Manager.<br>
+**Instalación HomeBrew:** Debido a que se ejecuta solo una simulación de un procesador MacOS dentro del procesador AMD RYZEN, Homebrew nos daba un error para su instalación, sin embargo, hay una alternativa para la instalación de CocoaPads mediante Ruby.
+<br>
+<img src="../Documentacion/Ejer1/Homebrew.png" width="400"><br>
+**Instalación CocaPods:**<br>
+<img src="../Documentacion/Ejer1/CocoaPods.png" width="400"><br>
+**Instalación SwiftPackageManager:** En cuanto al segundo gestor requerido (SPM), se documenta que este no requirió instalación por terminal, ya que viene embebido de forma nativa dentro de las herramientas de línea de comandos del propio IDE de Xcode (versión 14.3.1)
+<br>
 
-* **Herramientas de Consola:** Se instaló Homebrew mediante la terminal de macOS, y a través de este, los gestores de dependencias solicitados (CocoaPods) y Swift Package Manager[cite: 1].
-* **Proyecto de Prueba:** Se creó un proyecto base en Swift/SwiftUI compilado exitosamente para el simulador de iOS[cite: 1].
+* **Proyecto de Prueba:** Se creó un proyecto base en Swift/SwiftUI compilado exitosamente para el simulador de iOS.<br>
+<img src="../Documentacion/Ejer1/HolaMundoSwift.png" width="400"><br>
 
 
 ## Bibliografía
